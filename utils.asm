@@ -5,7 +5,7 @@
 WRITE_CHR:  EQU 02H
 
 ;*******************************************************************************
-; Output to console a string starting at the address in HL
+; Output to console a null terminated string starting at the address in HL
 ;
 ; Parameters:
 ;   HL - Address of the null terminated string

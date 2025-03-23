@@ -13,8 +13,7 @@ BIOS:           EQU 05H
     PUSH    HL
 
     ; show instructions
-    LD  HL, t_intro
-    CALL    STRING_OUT
+    CALL    SHOW_INSTRUCTIONS
 
     ; start game loop
     CALL    MAIN_LOOP
@@ -42,5 +41,12 @@ MAIN_LOOP:
 
     RET
 
+SHOW_INSTRUCTIONS:
+    ; show instructions
+    LD  HL, t_intro
+    CALL    STRING_OUT
+    RET
+
+; includes
     INCLUDE "utils.asm"
     INCLUDE "text.asm"

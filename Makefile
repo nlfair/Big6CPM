@@ -1,4 +1,4 @@
-TARGET = hello
+TARGET = big6
 FILES = main
 
 ASM = z88dk-z80asm
