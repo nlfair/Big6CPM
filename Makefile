@@ -10,7 +10,6 @@ all : build
 # create the binary file
 build : LINK
 	$(BIN) $(BINARGS)
-	$( **** info rename com file since xmodem doesn't like it! ****)
 
 # link the object files
 LINK : OBJ
