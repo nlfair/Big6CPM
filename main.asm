@@ -32,9 +32,9 @@ READ_STR:       EQU 0AH
 
     ; show exit message
     LD      HL, t_cash_out
-    CALL    STRING_OUT
+    CALL    NULL_STRING_OUT
 
-    ; todo: show winnings/losses
+    ; todo: show winnings/losses (gosub 3360)
 
 EXIT:
     ; end of program, return to CCP
@@ -47,203 +47,151 @@ EXIT:
 ; Main program loop
 ;*******************************************************************************
 MAIN_LOOP:
-    ; prompt for how many numbers
-    LD	    HL, t_bet_prompt
-    CALL    STRING_OUT
+    ; get # of guesses
+    LD      DE, t_bet_prompt         ; save prompt
+    LD      HL, v_prompt
+    LD      (HL), DE
+    
+    LD      DE, t_bad_count_alert   ; save error message
+    LD      HL, v_error
+    LD      (HL), DE
+    
+    LD      BC, 1                   ; lower range
+    LD      HL, v_lower
+    LD      (HL), BC
 
-GET_NUMBERS:
-    ; input number of guesses
-    LD      DE, v_input     ; store input buffer address
-    LD      A, 7            ; buffer size: # of characters + 1 to hoLD the size
-    LD      (DE), A
-    LD      C, READ_STR
-    CALL    BDOS
+    LD      BC, 3                   ; upper range
+    LD      HL, v_upper
+    LD      (HL), BC
 
-    ; check for "stop"
-    LD      DE, v_input + 1     ; second byte holds chars returned
-    LD      HL, t_stop
-    CALL    STRCMP
-    JR      NZ, CONVERT_NUMBERS ; if z = 1, "stop" was entered, we're done
+    CALL    GET_INT_IN_RANGE
+    JR      NZ, IN_RANGE            ; if z = 1, "stop" was entered, we're done
     RET
-CONVERT_NUMBERS:
-    LD      HL, t_nomatch   ; debugging
-    CALL    STRING_OUT
 
-    ; todo: check for number
+IN_RANGE:
+    ; debug ***********************************
+    ; ; first byte
+    ; LD      A, (HL) 
+    ; PUSH    HL
+    ; CALL    DUMPBYTE
 
-    ; todo: get guesses
+    ; ; second byte
+    ; POP     HL
+    ; INC     HL
+    ; LD      A, (HL) 
+    ; PUSH    HL
+    ; CALL    DUMPBYTE
 
-    ; todo: generate numbers
+    ; ; third byte
+    ; POP     HL
+    ; INC     HL
+    ; LD      A, (HL) 
+    ; PUSH    HL
+    ; CALL    DUMPBYTE
+    
+    ; ; fourth byte
+    ; POP     HL
+    ; INC     HL
+    ; LD      A, (HL) 
+    ; PUSH    HL
+    ; CALL    DUMPBYTE
+    
+    ; ; fifth byte
+    ; POP     HL
+    ; INC     HL
+    ; LD      A, (HL) 
+    ; PUSH    HL
+    ; CALL    DUMPBYTE
+    
+    ; ; sixth byte
+    ; POP     HL
+    ; INC     HL
+    ; LD      A, (HL) 
+    ; PUSH    HL
+    ; CALL    DUMPBYTE
+    
+    ; ; seventh byte
+    ; POP     HL
+    ; INC     HL
+    ; LD      A, (HL) 
+    ; PUSH    HL
+    ; CALL    DUMPBYTE
+    
+    ; ; eighth byte
+    ; POP     HL
+    ; INC     HL
+    ; LD      A, (HL) 
+    ; PUSH    HL
+    ; CALL    DUMPBYTE
+    
+    ; RET
+    ; end debug *******************************
 
-    ; todo: compare
+CHECK_GUESSES_RANGE:
+    LD	    DE, HL          ; HL gets overwritten by CMP16, so lets swap
+    LD      HL, 1
+    CALL    CMP16
+    JR      Z, ONE_GUESS    ; 1 is a match
 
-    ; todo: update totals
+    LD      HL, 2           ; check 2
+    CALL    CMP16
+    JR      Z, TWO_GUESSES  ; 2 is a match
 
-    ; todo: tell player how they did
+    LD      HL, 3           ; check 3
+    CALL    CMP16
+    JR      Z, THREE_GUESSES    ; 3 is a match
 
-    ; todo: keep playing?
+    LD      HL, t_bad_count_alert
+    CALL    NULL_STRING_OUT
+    JMP      MAIN_LOOP
 
-    ; todo: if playing, show rules?
+ONE_GUESS:
+    ; get 1 guess
+    LD  HL, t_number_prompt:
+    CALL NULL_STRING_OUT
+    ; todo: get number
+    ; todo: get wager
+    RET
 
-    ; todo: if not playing, show exit message
+TWO_GUESSES:
+    ; get 2 guesses
+    LD  HL, t_first_number_prompt
+    CALL NULL_STRING_OUT
+    ; todo: get 2 numbers
+    ; todo: get wager
+    RET
+
+THREE_GUESSES:
+    ; get 3 guesses
+    LD  HL, t_three
+    CALL NULL_STRING_OUT
+    ; todo: get 3 numbers
+    ; todo: get wager
+    RET
+
+    ; todo: generate numbers (gosub 1870)
+
+    ; todo: compare and update winnings(gosub 2060)
+
+    ; todo: tell player how they did (gosub 3260)
+
+    JP      MAIN_LOOP;
 
     RET
 
 SHOW_INSTRUCTIONS:
     ; show instructions
     LD      HL, t_intro
-    CALL    STRING_OUT
-    RET
-
-SHOW_BYTES:
-    ; show 8 bytes from DE
-    LD      A, (DE)         ; get character
-    CALL    BN2HEX          ; get ASCII
-    PUSH    DE              ; store input buffer
-    LD      DE, HL          ; copy result
-    LD      HL, v_output    ; put result into output
-    LD      (HL), D
-    INC     HL              ; next position
-    LD      (HL), E
-    INC     HL              ; next position
-    LD      A, 32           ; add space
-    LD      (HL), A         ; 
-    INC     HL              ; next position
-    POP     DE              ; get buffer back
-    INC     DE              ; next character
-
-    ; 1
-    PUSH    DE              ; store input buffer position
-    PUSH	HL              ; store output buffer position
-    LD      A, (DE)         ; get character
-    CALL    BN2HEX          ; get ASCII
-    LD      DE, HL          ; copy result
-    POP     HL              ; get back positon in output buffer
-    LD      (HL), D
-    INC     HL              ; next position
-    LD      (HL), E
-    INC     HL              ; next position
-    LD      A, 32           ; add space
-    LD      (HL), A         ; 
-    INC     HL              ; next position
-    POP     DE              ; get buffer back
-    INC     DE              ; next character
-
-    ; 2
-    PUSH    DE              ; store input buffer position
-    PUSH	HL              ; store output buffer position
-    LD      A, (DE)         ; get character
-    CALL    BN2HEX          ; get ASCII
-    LD      DE, HL          ; copy result
-    POP     HL              ; get back positon in output buffer
-    LD      (HL), D
-    INC     HL              ; next position
-    LD      (HL), E
-    INC     HL              ; next position
-    LD      A, 32           ; add space
-    LD      (HL), A         ; 
-    INC     HL              ; next position
-    POP     DE              ; get buffer back
-    INC     DE              ; next character
-
-    ; 3
-    PUSH    DE              ; store input buffer position
-    PUSH	HL              ; store output buffer position
-    LD      A, (DE)         ; get character
-    CALL    BN2HEX          ; get ASCII
-    LD      DE, HL          ; copy result
-    POP     HL              ; get back positon in output buffer
-    LD      (HL), D
-    INC     HL              ; next position
-    LD      (HL), E
-    INC     HL              ; next position
-    LD      A, 32           ; add space
-    LD      (HL), A         ; 
-    INC     HL              ; next position
-    POP     DE              ; get buffer back
-    INC     DE              ; next character
-
-    ; 4
-    PUSH    DE              ; store input buffer position
-    PUSH	HL              ; store output buffer position
-    LD      A, (DE)         ; get character
-    CALL    BN2HEX          ; get ASCII
-    LD      DE, HL          ; copy result
-    POP     HL              ; get back positon in output buffer
-    LD      (HL), D
-    INC     HL              ; next position
-    LD      (HL), E
-    INC     HL              ; next position
-    LD      A, 32           ; add space
-    LD      (HL), A         ; 
-    INC     HL              ; next position
-    POP     DE              ; get buffer back
-    INC     DE              ; next character
-
-    ; 5
-    PUSH    DE              ; store input buffer position
-    PUSH	HL              ; store output buffer position
-    LD      A, (DE)         ; get character
-    CALL    BN2HEX          ; get ASCII
-    LD      DE, HL          ; copy result
-    POP     HL              ; get back positon in output buffer
-    LD      (HL), D
-    INC     HL              ; next position
-    LD      (HL), E
-    INC     HL              ; next position
-    LD      A, 32           ; add space
-    LD      (HL), A         ; 
-    INC     HL              ; next position
-    POP     DE              ; get buffer back
-    INC     DE              ; next character
-
-    ; 6
-    PUSH    DE              ; store input buffer position
-    PUSH	HL              ; store output buffer position
-    LD      A, (DE)         ; get character
-    CALL    BN2HEX          ; get ASCII
-    LD      DE, HL          ; copy result
-    POP     HL              ; get back positon in output buffer
-    LD      (HL), D
-    INC     HL              ; next position
-    LD      (HL), E
-    INC     HL              ; next position
-    LD      A, 32           ; add space
-    LD      (HL), A         ; 
-    INC     HL              ; next position
-    POP     DE              ; get buffer back
-    INC     DE              ; next character
-
-    ; 7
-    PUSH    DE              ; store input buffer position
-    PUSH	HL              ; store output buffer position
-    LD      A, (DE)         ; get character
-    CALL    BN2HEX          ; get ASCII
-    LD      DE, HL          ; copy result
-    POP     HL              ; get back positon in output buffer
-    LD      (HL), D
-    INC     HL              ; next position
-    LD      (HL), E
-    INC     HL              ; next position
-    LD      A, 32           ; add space
-    LD      (HL), A         ; 
-    INC     HL              ; next position
-    POP     DE              ; get buffer back
-    INC     DE              ; next character
-
-    LD      A, 0            ; null to end string
-    LD      (HL), A
-
-    LD      HL, v_output
-    CALL    STRING_OUT
+    CALL    NULL_STRING_OUT
     RET
 
 ; includes
-    INCLUDE "utils.asm"
+; todo: fix why they utils has to be included last
     INCLUDE "text.asm"
     INCLUDE "variables.asm"
+    INCLUDE "utils.asm"
 
 ; new stack at end of program
-    DS      256
 MY_SP:
+    DS      256
     

@@ -28,23 +28,15 @@ t_intro:
     DM      CR,LF
     DM      CR,LF,0            ; newlines, null
 
-t_bad_count_alert:
-    DM	"You cannot bet on less than one or more than three numbers.",CR,LF,0
-
+; prompts **********************************************************************
 t_number_prompt:
-    DM  "What number?"
-
-t_integer_alert:
-    DM  "You can only bet on an integer from one to six.",CR,LF,0
+    DM  "What number do you want to bet on?",CR,LF,0
 
 t_wager_prompt:
     DM	"Wager",CR,LF,0
 
 t_bet_prompt:
     DM	"How many numbers do you want to bet on?",CR,LF,0
-
-t_limit_alert:
-    DM	"The house limit is from $1 to $500.",CR,LF,0
 
 t_wager_two:
     DM	"Wager on both",CR,LF,0
@@ -64,9 +56,7 @@ t_second_number_prompt:
 t_third_number_prompt:
     DM	"Enter your third number",CR,LF,0
 
-t_bad_bet_alert:
-    DM	"You can only bet on an integer from one to six.",CR,LF,0
-
+; win/lose *********************************************************************
 t_lucky_numbers:
     DM	"The lucky numbers are: ",0
 
@@ -100,11 +90,25 @@ t_winnings:
 t_not_bad:
     DM	"!!  Not bad!!!",CR,LF,0
 
-t_stop:
-    DM	4, "stop"      ; stop command text prefixed with length for easier compare
+; alerts ***********************************************************************
+t_bad_count_alert:
+    DM	"You cannot bet on less than one or more than three numbers.",CR,LF,CR,LF,0
 
-t_output:               ; space for holding coverted numbers for output
-    DEFS    3           ; 3 bytes should be enough
+t_bad_bet_alert:
+    DM	"You can only bet on an integer from one to six.",CR,LF,CR,LF,0
+
+t_limit_alert:
+    DM	"The house limit is from $1 to $500.",CR,LF,CR,LF,0
+
+t_nan:
+    DM  "You have to enter a number or 'stop'.",CR,LF,CR, LF, 0 ; Not A Number
+
+; misc. ************************************************************************
+t_stop:
+    DM	4, "stop"       ; stop command text prefixed with length for easier compare
+
+t_newline:
+    DM  CR, LF, 0       ; crlf for new line
 
 ; TODO: remove debugging messages
 t_you_entered:
@@ -135,7 +139,7 @@ t_test:
     DM  1, "CR,LF"
 
 t_gogo:
-    DM  0, "gogo"   ; opposite of stop
+    DM  4, "gogo"   ; opposite of stop
 
 t_match:
     DM  "MATCH!", 0
@@ -145,3 +149,9 @@ t_nomatch:
 
 t_blankline:
     DM  CR, LF, 0
+
+t_pass:
+    DM "Pass", CR, LF, 0
+
+t_fail:
+    DM "Fail", CR, LF, 0
