@@ -20,14 +20,34 @@ v_output:
 OLD_SP:
     DW      0000H               ; old stack pointer
 
-v_prompt:
-    DW      0000H               ; pointer to prompt for GET_INT_IN_RANGE
+; parameters
+v_w_param_1:
+    DW      0000H
 
-v_error:
-    DW      0000H               ; error message for GET_INT_IN_RANGE
+v_w_param_2:
+    DW      0000H
 
-v_lower:
-    DW      0000H               ; lower value
+v_w_param_3:
+    DW      0000H
 
-v_upper:
-    DW      0000H               ; upper value
+v_w_param_4:
+    DW      0000H
+
+; wagers
+v_wager_1:
+    DW      0000H
+
+v_wager_2:
+    DW      0000H
+
+v_wager_3:
+    DW      0000H
+
+v_num_1:
+    DB      00H
+
+v_num_2:
+    DB      00H
+
+v_num_3:
+    DB      00H

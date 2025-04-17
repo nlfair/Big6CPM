@@ -48,22 +48,22 @@ EXIT:
 ;*******************************************************************************
 MAIN_LOOP:
     ; get # of guesses
-    LD      DE, t_bet_prompt         ; save prompt
-    LD      HL, v_prompt
-    LD      (HL), DE
-    
-    LD      DE, t_bad_count_alert   ; save error message
-    LD      HL, v_error
-    LD      (HL), DE
-    
     LD      BC, 1                   ; lower range
-    LD      HL, v_lower
+    LD      HL, v_w_param_1
     LD      (HL), BC
 
     LD      BC, 3                   ; upper range
-    LD      HL, v_upper
+    LD      HL, v_w_param_2
     LD      (HL), BC
 
+    LD      DE, t_bet_prompt        ; save prompt
+    LD      HL, v_w_param_3
+    LD      (HL), DE
+    
+    LD      DE, t_bad_count_alert   ; save error message
+    LD      HL, v_w_param_4
+    LD      (HL), DE
+    
     CALL    GET_INT_IN_RANGE
     JR      NZ, IN_RANGE            ; if z = 1, "stop" was entered, we're done
     RET

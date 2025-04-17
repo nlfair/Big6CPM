@@ -281,10 +281,10 @@ CMP16:
 ; enters 'stop'.
 ;
 ; Parameters
-;   v_lower - lower range
-;   v_upper - upper range
-;   v_prompt - address holding prompt
-;   v_error - address holding error message
+;   v_w_param_1 - lower range
+;   v_w_param_2 - upper range
+;   v_w_param_3 - address holding prompt
+;   v_w_param_4 - address holding error message
 ; Return
 ;   HL - the value entered
 ;   Z - set if user exited
@@ -294,13 +294,13 @@ CMP16:
 ;*******************************************************************************
 GET_INT_IN_RANGE:
     ; display prompt
-    LD      HL, (v_prompt)
+    LD      HL, (v_w_param_3)
     ; LD	A, H            ; debug
     ; CALL	DUMPBYTE    ; debug
-    ; LD  HL, (v_prompt)  ; debug
+    ; LD  HL, (v_w_param_3)  ; debug
     ; LD  A, L            ; debug
     ; CALL    DUMPBYTE    ; debug
-    ; LD  HL, (v_prompt)  ; debug
+    ; LD  HL, (v_w_param_3)  ; debug
     CALL    NULL_STRING_OUT ; display prompt
 
     ; input number of guesses
@@ -335,28 +335,28 @@ NOT_STOP:
     JR      GET_INT_IN_RANGE
 
 CHECK_LOWER_RANGE:
-    PUSH    HL              ; HL gets overwritten by CMP16
-    LD      DE, (v_lower)   ; get lower range value
+    PUSH    HL                  ; HL gets overwritten by CMP16
+    LD      DE, (v_w_param_1)   ; get lower range value
     CALL    CMP16
-    POP     HL              ; get converted value back off of stack
+    POP     HL                  ; get converted value back off of stack
 
     JR      Z, CHECK_UPPER_RANGE    ; value = lower range
     JR      NC, CHECK_UPPER_RANGE   ; value > than lower range
 
-    LD      HL, (v_error)   ;  too low, load error
+    LD      HL, (v_w_param_4)   ;  too low, load error
     CALL    NULL_STRING_OUT ; display error
     JR      GET_INT_IN_RANGE
 
 CHECK_UPPER_RANGE:
     PUSH	HL
-    LD      DE, (v_upper)   ; get lower range value
+    LD      DE, (v_w_param_2)   ; get lower range value
     CALL    CMP16
     POP     HL
 
     JR      Z, INT_IN_RANGE ; value = upper range
     JR      C, INT_IN_RANGE ; value < the upper range
 
-    LD      HL, (v_error)   ; too high, load error
+    LD      HL, (v_w_param_4)   ; too high, load error
     CALL    NULL_STRING_OUT ; display error
     JR      GET_INT_IN_RANGE
 
