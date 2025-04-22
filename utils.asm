@@ -3,66 +3,7 @@
 ;
 ; utilities for the app
 ;*******************************************************************************
-
-WRITE_CHR:  EQU 02H
-
-;*******************************************************************************
-; Output to console a null terminated string starting at the address in HL
-;
-; Parameters:
-;   HL - Address of the null terminated string
-;
-; Registers Used:
-;   A, C, E, HL
-;*******************************************************************************
-NULL_STRING_OUT:
-    ; check for NULL terminator
-    LD      A, (HL)     ; load character into A
-    CP      0           ; check for NULL
-    RET     Z           ; NULL, get out
-
-    ; output the character
-    PUSH	HL              ; WRITE_CHR trashes HL
-    LD      C, WRITE_CHR    ; write a character to console.  WRITE_CHR also trashes C
-    LD      E, (HL)         ; copy character to E
-    CALL    BDOS            ; print character, shouLD be defined in main.asm
-
-    ; move to next character and loop
-    POP	    HL
-    INC     HL              ; next character
-    JR      NULL_STRING_OUT ; loop
-
-
-
-;*******************************************************************************
-; Output to console a a length prepended string.  The maximum length is 255
-; characters.
-;
-; Parameters:
-;   HL - address of the length prepended string
-;
-; Registers Used:
-;   B, C, E, HL
-;*******************************************************************************
-LEN_STRING_OUT:
-    LD      B, (HL)     ; save len
-
-LSO_LOOP:
-    INC     HL              ; next position
-    PUSH    B               ; B and HL trashed by WRITE_CHR
-    PUSH    HL
-
-    LD      E, (HL)         ; get character
-    LD      C, WRITE_CHR    ; char output routine
-    CALL    BDOS
-
-    POP     HL              ; restore HL and B
-    POP     B
-    DJNZ    LSO_LOOP        ; loop if there are more
-
-    RET
-
-
+WRITE_CHR:  EQU 02H     ; BDOS write character entry point
 
 ;*******************************************************************************
 ; Convert ASCII string to binary
@@ -199,7 +140,7 @@ STRCMP:
     ; length of shorter = number of bytes to compare
     LD      A, (HL)     ; save length of string 1
     LD      (LENS1), A
-    LD      A, (de)     ; save length of string 2
+    LD      A, (DE)     ; save length of string 2
     LD      (LENS2), A
     CP      (HL)        ; compare to length of string 1
     JR      C, BEGCMP   ; jump if string 2 is shorter
@@ -210,16 +151,16 @@ BEGCMP:
     JR      Z, CMPLEN   ; compare lengths
                         ; if length is zero
     LD      B, A        ; B = number of bytes to compare
-    EX      DE, HL      ; de = string 1
+    EX      DE, HL      ; DE = string 1
                         ; HL = string 2
 
 CMPLP:
-    INC     HL          ; INCrement to nEXt bytes
+    INC     HL          ; increment to next bytes
     INC     DE
-    LD      A, (de)     ; get a byte of string 1
+    LD      A, (DE)     ; get a byte of string 1
     CP      (HL)        ; compare to byte of string 2
-    RET     NZ          ; RETurn with flags set if bytes not equal
-    DJNZ    CMPLP       ;continue through all bytes
+    RET     NZ          ; return with flags set if bytes not equal
+    DJNZ    CMPLP       ; continue through all bytes
 
     ; strings same through length of of shorter
     ; so use lengths to set flags
@@ -227,7 +168,7 @@ CMPLEN:
     LD      A, (LENS1)  ; compare lengths
     LD      HL, LENS2
     CP      (HL)
-    RET                 ; RETurn with flags set or cleared
+    RET                 ; return with flags set or cleared
 
     ; data
 LENS1:  DS  1           ; length of string 1
@@ -277,8 +218,8 @@ CMP16:
     RET
 
 ;*******************************************************************************
-; Get a 16 bit integer in the given range after the given prompt.  Will exit if user
-; enters 'stop'.
+; Get a 16 bit integer and check that it is in the given range after.  Will 
+; exit if user enters 'stop'.
 ;
 ; Parameters
 ;   v_w_param_1 - lower range
@@ -286,29 +227,29 @@ CMP16:
 ;   v_w_param_3 - address holding prompt
 ;   v_w_param_4 - address holding error message
 ; Return
-;   HL - the value entered
+;   HL - the integer entered.
 ;   Z - set if user exited
 ;
 ; Registers used
 ;   B, C, DE, HL
 ;*******************************************************************************
 GET_INT_IN_RANGE:
+    ; LD  DE, v_input + 1 ;debug
+    ; LD  A, D    ; debug
+    ; CALL DUMPBYTE   ;debug
+    ; LD  A, E    ; debug
+    ; CALL DUMPBYTE   ;debug
+
     ; display prompt
     LD      HL, (v_w_param_3)
-    ; LD	A, H            ; debug
-    ; CALL	DUMPBYTE    ; debug
-    ; LD  HL, (v_w_param_3)  ; debug
-    ; LD  A, L            ; debug
-    ; CALL    DUMPBYTE    ; debug
-    ; LD  HL, (v_w_param_3)  ; debug
     CALL    NULL_STRING_OUT ; display prompt
 
     ; input number of guesses
     LD      DE, v_input     ; store input buffer address
     LD      A, 25           ; buffer size: # of characters + 1 to hold the size
     LD      (DE), A
-    LD      C, READ_STR
-    CALL    BDOS
+    LD      C, READ_STR     ; BDOS read string function
+    CALL    BDOS            ; read in the string
 
     ; echo guess to screen
     LD      HL, v_input + 1     ; second byte holds length
@@ -321,22 +262,50 @@ GET_INT_IN_RANGE:
     LD      DE, v_input + 1     ; second byte holds chars returned
     LD      HL, t_stop          ; check for 'stop'
     CALL    STRCMP
-    JR      NZ, NOT_STOP ; if z = 1, "stop" was entered, we're done
+    RET     Z                   ; if z = 1, "stop" was entered, we're done
+
+    CALL    CHECK_RANGE
+    JR      NZ, GET_INT_IN_RANGE    ; not a number or not in range
     RET
 
-NOT_STOP:
+
+
+;*******************************************************************************
+; Check to see if the value in HL is a number and in range
+;
+; Parameters
+;   v_w_param_1 - lower range
+;   v_w_param_2 - upper range
+;   v_w_param_4 - address holding error message
+;
+; Return
+;   HL - the integer entered.
+;   Z - set if a number and in range
+;
+; Registers Used
+;   DE, HL
+;*******************************************************************************
+CHECK_RANGE:
+    ; LD      DE, v_input + 1 ; debug
+    ; CALL    SHOW_BYTES      ; debug
+    ; RET                     ; debug
+
+    ; LD      HL, t_check_range   ; debug
+    ; CALL    NULL_STRING_OUT     ; debug
+
     ; try to convert to a number
     LD      HL, v_input + 1     ; size starts at second character
     CALL    DEC2BN
     JR      NC, CHECK_LOWER_RANGE     ; conversion succeeded
-                                ; not a number
-    LD      HL, t_nan           ; get the error message
+
+    LD      HL, t_nan           ; not a number, get the error message
     CALL    NULL_STRING_OUT
-    JR      GET_INT_IN_RANGE
+    ADD     A, 1                ; clear Z flag
+    RET
 
 CHECK_LOWER_RANGE:
-    PUSH    HL                  ; HL gets overwritten by CMP16
     LD      DE, (v_w_param_1)   ; get lower range value
+    PUSH    HL                  ; HL gets overwritten by CMP16
     CALL    CMP16
     POP     HL                  ; get converted value back off of stack
 
@@ -344,12 +313,13 @@ CHECK_LOWER_RANGE:
     JR      NC, CHECK_UPPER_RANGE   ; value > than lower range
 
     LD      HL, (v_w_param_4)   ;  too low, load error
-    CALL    NULL_STRING_OUT ; display error
-    JR      GET_INT_IN_RANGE
+    CALL    NULL_STRING_OUT     ; display error
+    ADD     A, 1                ; clear Z flag
+    RET
 
 CHECK_UPPER_RANGE:
-    PUSH	HL
     LD      DE, (v_w_param_2)   ; get lower range value
+    PUSH	HL
     CALL    CMP16
     POP     HL
 
@@ -357,11 +327,90 @@ CHECK_UPPER_RANGE:
     JR      C, INT_IN_RANGE ; value < the upper range
 
     LD      HL, (v_w_param_4)   ; too high, load error
-    CALL    NULL_STRING_OUT ; display error
-    JR      GET_INT_IN_RANGE
+    CALL    NULL_STRING_OUT     ; display error
+    ADD     A, 1                ; clear Z flag
+    RET
 
 INT_IN_RANGE:
+    ; LD      HL, t_one       ; debug
+    ; CALL    NULL_STRING_OUT ; debug
+    LD      A, 1
+    DEC     A
     RET
+
+
+
+;*******************************************************************************
+; Output to console a null terminated string starting at the address in HL
+;
+; Parameters:
+;   HL - Address of the null terminated string
+;
+; Registers Used:
+;   A, C, E, HL
+;*******************************************************************************
+NULL_STRING_OUT:
+    ; check for NULL terminator
+    LD      A, (HL)     ; load character into A
+    CP      0           ; check for NULL
+    RET     Z           ; NULl found, string is ended
+
+    ; output the character
+    PUSH	HL              ; WRITE_CHR overwrites HL
+    LD      C, WRITE_CHR    ; write a character to console.  We have to load 
+                            ; this every time because WRITE_CHR overwrites C
+    LD      E, (HL)         ; copy character to E
+    CALL    BDOS            ; print character, shouLD be defined in main.asm
+    POP	    HL              ; restore HL register
+
+    ; move to next character and loop
+    INC     HL              ; next character
+    JR      NULL_STRING_OUT ; loop
+
+
+
+;*******************************************************************************
+; Output to console a a length prepended string.  The maximum length is 255
+; characters.
+;
+; Parameters:
+;   HL - address of the length prepended string
+;
+; Registers Used:
+;   B, C, E, HL
+;*******************************************************************************
+LEN_STRING_OUT:
+    LD      B, (HL)         ; save len
+
+LSO_LOOP:
+    INC     HL              ; next position
+    PUSH    B               ; B and HL are overwritten by WRITE_CHR
+    PUSH    HL
+
+    LD      C, WRITE_CHR    ; char output routine
+    LD      E, (HL)         ; get character
+    CALL    BDOS
+
+    POP     HL              ; restore HL and B
+    POP     B
+
+    DJNZ    LSO_LOOP        ; loop if there are more
+
+    RET
+
+
+
+;*******************************************************************************
+; Split up a delimited string
+;
+; Parameters:
+;
+;
+; Registers Used:
+;
+;*******************************************************************************
+SPLIT_STRING:
+;todo: implement
 
 
 
@@ -427,6 +476,8 @@ NAS1:
     ADD     A, '0'      ; add ASCII 0 to make a character
     RET
 
+
+
 ;*******************************************************************************
 ; Dump a byte to console as two characters with a trailing space
 ; This is quick and dirty for testing, I don't need it to be efficient
@@ -462,162 +513,53 @@ DUMPBYTE:
 d_output:
     DS      255                 ; output buffer
 
+
+
 ;*******************************************************************************
-; Show 8 bytes stored
+; Show 8 bytes at the given address
 ;
 ; Parameters:
 ;   DE - address of the 8 bytes to display
 ;
 ; Registers used
-;   B, C, AF, DE, HL
+;   A, B, HL
 ;*******************************************************************************
 SHOW_BYTES:
-    ; show 8 bytes from DE
-    LD      A, (DE)         ; get character
-    CALL    BN2HEX          ; get ASCII
-    PUSH    DE              ; store input buffer
-    LD      DE, HL          ; copy result
-    LD      HL, v_output    ; put result into output
-    LD      (HL), D
-    INC     HL              ; next position
-    LD      (HL), E
-    INC     HL              ; next position
-    LD      A, 32           ; add space
-    LD      (HL), A         ; 
-    INC     HL              ; next position
-    POP     DE              ; get buffer back
-    INC     DE              ; next character
+    ; LD  DE, v_input + 1 ;debug
+    ; LD  A, D    ; debug
+    ; CALL DUMPBYTE   ;debug
+    ; LD  A, E    ; debug
+    ; CALL DUMPBYTE   ;debug
 
-    ; 1
-    PUSH    DE              ; store input buffer position
-    PUSH	HL              ; store output buffer position
-    LD      A, (DE)         ; get character
-    CALL    BN2HEX          ; get ASCII
-    LD      DE, HL          ; copy result
-    POP     HL              ; get back positon in output buffer
-    LD      (HL), D
-    INC     HL              ; next position
-    LD      (HL), E
-    INC     HL              ; next position
-    LD      A, 32           ; add space
-    LD      (HL), A         ; 
-    INC     HL              ; next position
-    POP     DE              ; get buffer back
-    INC     DE              ; next character
+    ; below works in main.asm, but not here
+    ; LD  HL, t_one   ;debug
+    ; CALL NULL_STRING_OUT;   debug
+    ; LD  HL, t_you_win_alert   ; debug
+    ; CALL    NULL_STRING_OUT;    debug
 
-    ; 2
-    PUSH    DE              ; store input buffer position
-    PUSH	HL              ; store output buffer position
-    LD      A, (DE)         ; get character
-    CALL    BN2HEX          ; get ASCII
-    LD      DE, HL          ; copy result
-    POP     HL              ; get back positon in output buffer
-    LD      (HL), D
-    INC     HL              ; next position
-    LD      (HL), E
-    INC     HL              ; next position
-    LD      A, 32           ; add space
-    LD      (HL), A         ; 
-    INC     HL              ; next position
-    POP     DE              ; get buffer back
-    INC     DE              ; next character
+    ; LD  HL, t_one   ;debug
+    ; CALL NULL_STRING_OUT;   debug
 
-    ; 3
-    PUSH    DE              ; store input buffer position
-    PUSH	HL              ; store output buffer position
-    LD      A, (DE)         ; get character
-    CALL    BN2HEX          ; get ASCII
-    LD      DE, HL          ; copy result
-    POP     HL              ; get back positon in output buffer
-    LD      (HL), D
-    INC     HL              ; next position
-    LD      (HL), E
-    INC     HL              ; next position
-    LD      A, 32           ; add space
-    LD      (HL), A         ; 
-    INC     HL              ; next position
-    POP     DE              ; get buffer back
-    INC     DE              ; next character
+    ; what if I output a letter?
+    ; LD      C, 2    ; debug
+    ; LD      E, 'q'  ; debug
+    ; CALL    5       ; debug
+    
+    ; LD  HL, t_you_win_alert   ; debug
+    ; CALL    NULL_STRING_OUT;    debug
 
-    ; 4
-    PUSH    DE              ; store input buffer position
-    PUSH	HL              ; store output buffer position
-    LD      A, (DE)         ; get character
-    CALL    BN2HEX          ; get ASCII
-    LD      DE, HL          ; copy result
-    POP     HL              ; get back positon in output buffer
-    LD      (HL), D
-    INC     HL              ; next position
-    LD      (HL), E
-    INC     HL              ; next position
-    LD      A, 32           ; add space
-    LD      (HL), A         ; 
-    INC     HL              ; next position
-    POP     DE              ; get buffer back
-    INC     DE              ; next character
+    LD      B, 8
+SB_LOOP:
+    PUSH    B       ; DUMPBYTE overwrites
+    PUSH	DE      ; DUMPBYTE overwrites
 
-    ; 5
-    PUSH    DE              ; store input buffer position
-    PUSH	HL              ; store output buffer position
-    LD      A, (DE)         ; get character
-    CALL    BN2HEX          ; get ASCII
-    LD      DE, HL          ; copy result
-    POP     HL              ; get back positon in output buffer
-    LD      (HL), D
-    INC     HL              ; next position
-    LD      (HL), E
-    INC     HL              ; next position
-    LD      A, 32           ; add space
-    LD      (HL), A         ; 
-    INC     HL              ; next position
-    POP     DE              ; get buffer back
-    INC     DE              ; next character
+    LD  A, (DE)
+    CALL DUMPBYTE
 
-    ; 6
-    PUSH    DE              ; store input buffer position
-    PUSH	HL              ; store output buffer position
-    LD      A, (DE)         ; get character
-    CALL    BN2HEX          ; get ASCII
-    LD      DE, HL          ; copy result
-    POP     HL              ; get back positon in output buffer
-    LD      (HL), D
-    INC     HL              ; next position
-    LD      (HL), E
-    INC     HL              ; next position
-    LD      A, 32           ; add space
-    LD      (HL), A         ; 
-    INC     HL              ; next position
-    POP     DE              ; get buffer back
-    INC     DE              ; next character
+    POP DE          ; restore
+    INC DE          ; next byte
 
-    ; 7
-    PUSH    DE              ; store input buffer position
-    PUSH	HL              ; store output buffer position
-    LD      A, (DE)         ; get character
-    CALL    BN2HEX          ; get ASCII
-    LD      DE, HL          ; copy result
-    POP     HL              ; get back positon in output buffer
-    LD      (HL), D
-    INC     HL              ; next position
-    LD      (HL), E
-    INC     HL              ; next position
-    LD      A, 32           ; add space
-    LD      (HL), A         ; 
-    INC     HL              ; next position
-    POP     DE              ; get buffer backS
-    INC     DE              ; next character
+    POP B           ; restore
+    DJNZ    SB_LOOP
 
-    LD      A, 0DH          ; CR
-    LD      (HL), A
-    INC     HL
-
-    LD      A, 0AH          ; LF
-    LD      (HL), A
-    INC     HL
-
-    LD      A, 0            ; null to end string
-    LD      (HL), A
-
-    LD      HL, v_output
-    CALL    NULL_STRING_OUT
     RET

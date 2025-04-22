@@ -155,3 +155,7 @@ t_pass:
 
 t_fail:
     DM "Fail", CR, LF, 0
+
+t_check_range:
+    DM "CHECK_RANGE:", CR, LF, 0
+

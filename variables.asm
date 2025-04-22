@@ -28,6 +28,9 @@ v_wager_2:
 v_wager_3:
     DW      0000H   ; wager 3
 
+v_numbers:
+    DB      00H     ; how many numbers user chose
+
 v_num_1:
     DB      00H     ; user number 1
 
