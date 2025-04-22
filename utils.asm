@@ -234,12 +234,6 @@ CMP16:
 ;   B, C, DE, HL
 ;*******************************************************************************
 GET_INT_IN_RANGE:
-    ; LD  DE, v_input + 1 ;debug
-    ; LD  A, D    ; debug
-    ; CALL DUMPBYTE   ;debug
-    ; LD  A, E    ; debug
-    ; CALL DUMPBYTE   ;debug
-
     ; display prompt
     LD      HL, (v_w_param_3)
     CALL    NULL_STRING_OUT ; display prompt
@@ -265,7 +259,7 @@ GET_INT_IN_RANGE:
     RET     Z                   ; if z = 1, "stop" was entered, we're done
 
     CALL    CHECK_RANGE
-    JR      NZ, GET_INT_IN_RANGE    ; not a number or not in range
+    JR      Z, GET_INT_IN_RANGE    ; not a number or not in range
     RET
 
 
@@ -280,19 +274,12 @@ GET_INT_IN_RANGE:
 ;
 ; Return
 ;   HL - the integer entered.
-;   Z - set if a number and in range
+;   Z - clear if a number and in range
 ;
 ; Registers Used
 ;   DE, HL
 ;*******************************************************************************
 CHECK_RANGE:
-    ; LD      DE, v_input + 1 ; debug
-    ; CALL    SHOW_BYTES      ; debug
-    ; RET                     ; debug
-
-    ; LD      HL, t_check_range   ; debug
-    ; CALL    NULL_STRING_OUT     ; debug
-
     ; try to convert to a number
     LD      HL, v_input + 1     ; size starts at second character
     CALL    DEC2BN
@@ -300,7 +287,9 @@ CHECK_RANGE:
 
     LD      HL, t_nan           ; not a number, get the error message
     CALL    NULL_STRING_OUT
-    ADD     A, 1                ; clear Z flag
+    
+    LD      A, 1                ; set Z flag
+    DEC	    A
     RET
 
 CHECK_LOWER_RANGE:
@@ -314,7 +303,9 @@ CHECK_LOWER_RANGE:
 
     LD      HL, (v_w_param_4)   ;  too low, load error
     CALL    NULL_STRING_OUT     ; display error
-    ADD     A, 1                ; clear Z flag
+
+    LD      A, 1                ; set Z flag
+    DEC	    A
     RET
 
 CHECK_UPPER_RANGE:
@@ -328,14 +319,14 @@ CHECK_UPPER_RANGE:
 
     LD      HL, (v_w_param_4)   ; too high, load error
     CALL    NULL_STRING_OUT     ; display error
-    ADD     A, 1                ; clear Z flag
+
+    LD      A, 1                ; set Z flag
+    DEC	    A
     RET
 
 INT_IN_RANGE:
-    ; LD      HL, t_one       ; debug
-    ; CALL    NULL_STRING_OUT ; debug
-    LD      A, 1
-    DEC     A
+    LD      A, 1                ; clear Z flag
+    INC	    A
     RET
 
 

@@ -88,18 +88,12 @@ MAIN_LOOP:
     INC     HL
     LD      (HL), B
     
-    ; LD  BC, v_input + 1 ;debug
-    ; LD  A, B    ; debug
-    ; CALL DUMPBYTE   ;debug
-    ; LD  A, C    ; debug
-    ; CALL DUMPBYTE   ;debug
-
     CALL    GET_INT_IN_RANGE
-    ;JR      NZ, GET_GUESSES            ; if z = 1, "stop" was entered, we're done
-    RET
+    JR      NZ, GET_GUESSES
+    RET                             ; if z = 1, "stop" was entered, we're done
 
 GET_GUESSES:
-    LD	    D, H          ; HL gets overwritten by CMP16, so lets swap
+    LD	    D, H            ; DE is not overwritten by CMP16, so lets swap
     LD      E, L
     LD      HL, 1
     CALL    CMP16
@@ -159,7 +153,7 @@ THREE_GUESSES:
 
     JP      MAIN_LOOP;
 
-    RET
+
 
 SHOW_INSTRUCTIONS:
     ; show instructions

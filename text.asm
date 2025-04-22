@@ -159,3 +159,5 @@ t_fail:
 t_check_range:
     DM "CHECK_RANGE:", CR, LF, 0
 
+t_in_range:
+    DM "In range", CR, LF, 0
